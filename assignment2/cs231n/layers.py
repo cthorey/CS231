@@ -183,7 +183,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         running_var = momentum * running_var + (1.0 - momentum) * var
 
         cache = (mu, xmu, carre, var, sqrtvar, invvar,
-                 va2, va3, gamma, beta, bn_param)
+                 va2, va3, gamma, beta, x, bn_param)
     elif mode == 'test':
         #######################################################################
         # TODO: Implement the test-time forward pass for batch normalization. Use   #
@@ -230,7 +230,7 @@ def batchnorm_backward(dout, cache):
     # TODO: Implement the backward pass for batch normalization. Store the      #
     # results in the dx, dgamma, and dbeta variables.                           #
     ##########################################################################
-    mu, xmu, carre, var, sqrtvar, invvar, va2, va3, gamma, beta, bn_param = cache
+    mu, xmu, carre, var, sqrtvar, invvar, va2, va3, gamma, beta, x, bn_param = cache
     eps = bn_param.get('eps', 1e-5)
     N, D = dout.shape
 
@@ -282,6 +282,7 @@ def batchnorm_backward_alt(dout, cache):
     Inputs / outputs: Same as batchnorm_backward
     """
     dx, dgamma, dbeta = None, None, None
+
     ##########################################################################
     # TODO: Implement the backward pass for batch normalization. Store the      #
     # results in the dx, dgamma, and dbeta variables.                           #
@@ -290,10 +291,14 @@ def batchnorm_backward_alt(dout, cache):
     # should be able to compute gradients with respect to the inputs in a       #
     # single statement; our implementation fits on a single 80-character line.  #
     ##########################################################################
-    pass
-    ##########################################################################
-    #                             END OF YOUR CODE                              #
-    ##########################################################################
+    mu, xmu, carre, var, sqrtvar, invvar, va2, va3, gamma, beta, x, bn_param = cache
+    eps = bn_param.get('eps', 1e-5)
+    N, D = dout.shape
+
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum((x - mu) * (var + eps)**(-1. / 2.) * dout, axis=0)
+    dx = gamma / N * (var + eps)**(-1. / 2.) * \
+        (N - 1 - (x - mu)**2 * (var + eps)**(-1)) * dout
 
     return dx, dgamma, dbeta
 
