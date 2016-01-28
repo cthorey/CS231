@@ -31,9 +31,6 @@ def affine_relu_backward(dout, cache):
     return dx, dw, db
 
 
-pass
-
-
 def conv_relu_forward(x, w, b, conv_param):
     """
     A convenience layer that performs a convolution followed by a ReLU.
