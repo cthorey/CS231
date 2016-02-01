@@ -451,10 +451,48 @@ def conv_backward_naive(dout, cache):
     ##########################################################################
     # TODO: Implement the convolutional backward pass.                          #
     ##########################################################################
-    pass
-    ##########################################################################
-    #                             END OF YOUR CODE                              #
-    ##########################################################################
+    x, w, b, conv_param = cache
+    x_pad = np.pad(x, ((0,), (0,), (1,), (1,)), 'constant')
+
+    N, C, H, W = x.shape
+    F, C, HH, WW = w.shape
+    N, F, Hh, Hw = dout.shape
+    S = conv_param['stride']
+
+    # For dw: Size (C,HH,WW)
+    # Brut force love the loops !
+    dw = np.zeros((F, C, HH, WW))
+    for kernel in range(F):
+        for cprime in range(C):
+            for i in range(HH):
+                for j in range(WW):
+                    sub_xpad = x_pad[:, cprime, i:i + Hh * S:S, j:j + Hw * S:S]
+                    dw[kernel, cprime, i, j] += np.sum(
+                        dout[:, kernel, :, :] * sub_xpad)
+                    # Brut for, love the loops
+                    # for n in range(N):
+                    #     for k in range(Hh):
+                    #         for l in range(Hw):
+                    #             idx_i = i + S * k
+                    #             idx_j = j + S * l
+                    #             dw[kernel, cprime, i, j] += dout[n, kernel,
+                    # k, l] * x_pad[n, cprime, idx_i, idx_j]
+
+    # For dx : Size (N,C,H,W)
+    dx = np.zeros((N, C, H, W))
+    for n in range(N):
+        for cprime in range(C):
+            for i in range(H):
+                for j in range(W):
+                    for f in range(F):
+                        for k in range(Hh):
+                            for l in range(Hw):
+                                if (i in range(S * k, S * k + HH)) and (j in range(S * l, S * l + WW)):
+                                    dx[n, cprime, i, j] += dout[n, f, k, l] * \
+                                        w[f, cprime, i - k * S, j - l * S]
+                                # sub_w = w[:, cprime, i:i + Hh * S:S, j:j + Hw * S:S]
+                                # dx[img, cprime, i,j] += np.sum(dout[img, cprime, :, :], sub_w)
+
     return dx, dw, db
 
 
