@@ -1,0 +1,33 @@
+
+\documentclass{article}           %% ceci est un commentaire (apres le caractere %)
+
+ %% adapte le style article aux conventions francophones
+\usepackage[applemac]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{fullpage}
+\usepackage[T1]{fontenc}         
+\usepackage{color}
+\definecolor{marron}{rgb}{0,0.50,0}
+\DeclareMathOperator\erf{erf}
+\DeclareMathOperator\erfc{erfc}
+\begin{document}
+
+\section{numpy}
+Return the most frequent element of a numpy array
+\begin{verbatim}
+u, indices = np.unique(closest_y, return_inverse=True)
+u[np.argmax(np.bincount(indices))]
+\end{verbatim}
+Return the indice of the max argument-Indices of the maximum values along an axis.
+\begin{verbatim}
+argmax
+\end{verbatim}
+In case  of multiple  occurrences of the  maximum values,  the indices
+corresponding to the first occurrence are returned.\\
+
+\end{document}
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
