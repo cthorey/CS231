@@ -402,10 +402,34 @@ def conv_forward_naive(x, w, b, conv_param):
     # TODO: Implement the convolutional forward pass.                           #
     # Hint: you can use the function np.pad for padding.                        #
     ##########################################################################
-    pass
-    ##########################################################################
-    #                             END OF YOUR CODE                              #
-    ##########################################################################
+    N, C, H, W = x.shape
+    F, C, HH, WW = w.shape
+    S = conv_param['stride']
+    P = conv_param['pad']
+
+    # Add padding to each image
+    x_pad = np.pad(x, ((0,), (0,), (1,), (1,)), 'constant')
+    # Size of the output
+    Hh = 1 + (H + 2 * P - HH) / S
+    Hw = 1 + (W + 2 * P - WW) / S
+
+    out = np.zeros((N, F, Hh, Hw))
+    # First, iterate over all the images
+    for img in range(N):
+        # Second, iterate over all the kernels
+        for kernel in range(F):
+
+            # Then we have to coupute for each img the activation
+            # resulting from the convolution
+            for i in range(Hh):
+                for j in range(Hw):
+                    i_0 = S * i
+                    i_1 = S * i + HH
+                    j_0 = S * j
+                    j_1 = S * j + WW
+                    out[img, kernel, i, j] = np.sum(
+                        x_pad[img, :, i_0:i_1, j_0:j_1] * w[kernel, :]) + b[kernel]
+
     cache = (x, w, b, conv_param)
     return out, cache
 
