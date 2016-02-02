@@ -498,17 +498,33 @@ def max_pool_forward_naive(x, pool_param):
       - 'stride': The distance between adjacent pooling regions
 
     Returns a tuple of:
-    - out: Output data
+    - out: Output data (N,C,H1,W1)
     - cache: (x, pool_param)
+
+    where H1 = (H-Hp)/S+1
+    and W1 = (W-Wp)/S+1
+
     """
-    out = None
+
     ##########################################################################
     # TODO: Implement the max pooling forward pass                              #
     ##########################################################################
-    pass
-    ##########################################################################
-    #                             END OF YOUR CODE                              #
-    ##########################################################################
+
+    Hp = pool_param['pool_height']
+    Wp = pool_param['pool_width']
+    S = pool_param['stride']
+    N, C, H, W = x.shape
+    H1 = (H - Hp) / S + 1
+    W1 = (W - Wp) / S + 1
+
+    out = np.zeros((N, C, H1, W1))
+    for n in range(N):
+        for c in range(C):
+            for k in range(H1):
+                for l in range(W1):
+                    out[n, c, k, l] = np.max(
+                        x[n, c, k * S:k * S + Hp, l * S:l * S + Wp])
+
     cache = (x, pool_param)
     return out, cache
 
@@ -528,10 +544,25 @@ def max_pool_backward_naive(dout, cache):
     ##########################################################################
     # TODO: Implement the max pooling backward pass                             #
     ##########################################################################
-    pass
-    ##########################################################################
-    #                             END OF YOUR CODE                              #
-    ##########################################################################
+    x, pool_param = cache
+    Hp = pool_param['pool_height']
+    Wp = pool_param['pool_width']
+    S = pool_param['stride']
+    N, C, H, W = x.shape
+    H1 = (H - Hp) / S + 1
+    W1 = (W - Wp) / S + 1
+
+    dx = np.zeros((N, C, H, W))
+    for nprime in range(N):
+        for cprime in range(C):
+            for k in range(H1):
+                for l in range(W1):
+                    x_pooling = x[nprime, cprime, k *
+                                  S:k * S + Hp, l * S:l * S + Wp]
+                    maxi = np.max(x_pooling)
+                    x_mask = x_pooling == maxi
+                    dx[nprime, cprime, k * S:k * S + Hp, l * S:l *
+                        S + Wp] += dout[nprime, cprime, k, l] * x_mask
     return dx
 
 
