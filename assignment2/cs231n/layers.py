@@ -408,27 +408,19 @@ def conv_forward_naive(x, w, b, conv_param):
     P = conv_param['pad']
 
     # Add padding to each image
-    x_pad = np.pad(x, ((0,), (0,), (1,), (1,)), 'constant')
+    x_pad = np.pad(x, ((0,), (0,), (P,), (P,)), 'constant')
     # Size of the output
     Hh = 1 + (H + 2 * P - HH) / S
     Hw = 1 + (W + 2 * P - WW) / S
 
     out = np.zeros((N, F, Hh, Hw))
-    # First, iterate over all the images
-    for img in range(N):
-        # Second, iterate over all the kernels
-        for kernel in range(F):
 
-            # Then we have to coupute for each img the activation
-            # resulting from the convolution
-            for i in range(Hh):
-                for j in range(Hw):
-                    i_0 = S * i
-                    i_1 = S * i + HH
-                    j_0 = S * j
-                    j_1 = S * j + WW
-                    out[img, kernel, i, j] = np.sum(
-                        x_pad[img, :, i_0:i_1, j_0:j_1] * w[kernel, :]) + b[kernel]
+    for n in range(N):  # First, iterate over all the images
+        for f in range(F):  # Second, iterate over all the kernels
+            for k in range(Hh):
+                for l in range(Hw):
+                    out[n, f, k, l] = np.sum(
+                        x_pad[n, :, k * S:k * S + HH, l * S:l * S + WW] * w[f, :]) + b[f]
 
     cache = (x, w, b, conv_param)
     return out, cache
@@ -452,7 +444,8 @@ def conv_backward_naive(dout, cache):
     # TODO: Implement the convolutional backward pass.                          #
     ##########################################################################
     x, w, b, conv_param = cache
-    x_pad = np.pad(x, ((0,), (0,), (1,), (1,)), 'constant')
+    P = conv_param['pad']
+    x_pad = np.pad(x, ((0,), (0,), (P,), (P,)), 'constant')
 
     N, C, H, W = x.shape
     F, C, HH, WW = w.shape
@@ -462,36 +455,33 @@ def conv_backward_naive(dout, cache):
     # For dw: Size (C,HH,WW)
     # Brut force love the loops !
     dw = np.zeros((F, C, HH, WW))
-    for kernel in range(F):
+    for fprime in range(F):
         for cprime in range(C):
             for i in range(HH):
                 for j in range(WW):
                     sub_xpad = x_pad[:, cprime, i:i + Hh * S:S, j:j + Hw * S:S]
-                    dw[kernel, cprime, i, j] += np.sum(
-                        dout[:, kernel, :, :] * sub_xpad)
-                    # Brut for, love the loops
-                    # for n in range(N):
-                    #     for k in range(Hh):
-                    #         for l in range(Hw):
-                    #             idx_i = i + S * k
-                    #             idx_j = j + S * l
-                    #             dw[kernel, cprime, i, j] += dout[n, kernel,
-                    # k, l] * x_pad[n, cprime, idx_i, idx_j]
+                    dw[fprime, cprime, i, j] = np.sum(
+                        dout[:, fprime, :, :] * sub_xpad)
+
+    # For db : Size (F,)
+    db = np.zeros((F))
+    for fprime in range(F):
+        db[fprime] = np.sum(dout[:, fprime, :, :])
 
     # For dx : Size (N,C,H,W)
     dx = np.zeros((N, C, H, W))
-    for n in range(N):
+    for nprime in range(N):
         for cprime in range(C):
             for i in range(H):
                 for j in range(W):
                     for f in range(F):
                         for k in range(Hh):
                             for l in range(Hw):
-                                if (i in range(S * k, S * k + HH)) and (j in range(S * l, S * l + WW)):
-                                    dx[n, cprime, i, j] += dout[n, f, k, l] * \
-                                        w[f, cprime, i - k * S, j - l * S]
-                                # sub_w = w[:, cprime, i:i + Hh * S:S, j:j + Hw * S:S]
-                                # dx[img, cprime, i,j] += np.sum(dout[img, cprime, :, :], sub_w)
+                                for p in range(HH):
+                                    for q in range(WW):
+                                        if (p + k * S == i + P) & (q + S * l == j + P):
+                                            dx[nprime, cprime, i, j] += dout[nprime,
+                                                                             f, k, l] * w[f, cprime, p, q]
 
     return dx, dw, db
 
