@@ -468,20 +468,22 @@ def conv_backward_naive(dout, cache):
     for fprime in range(F):
         db[fprime] = np.sum(dout[:, fprime, :, :])
 
-    # For dx : Size (N,C,H,W)
     dx = np.zeros((N, C, H, W))
     for nprime in range(N):
-        for cprime in range(C):
-            for i in range(H):
-                for j in range(W):
-                    for f in range(F):
-                        for k in range(Hh):
-                            for l in range(Hw):
-                                for p in range(HH):
-                                    for q in range(WW):
-                                        if (p + k * S == i + P) & (q + S * l == j + P):
-                                            dx[nprime, cprime, i, j] += dout[nprime,
-                                                                             f, k, l] * w[f, cprime, p, q]
+        for i in range(H):
+            for j in range(W):
+                for f in range(F):
+                    for k in range(Hh):
+                        for l in range(Hw):
+                            mask1 = np.zeros_like(w[f, :, :, :])
+                            mask2 = np.zeros_like(w[f, :, :, :])
+                            if (i + P - k * S) < HH and (i + P - k * S) >= 0:
+                                mask1[:, i + P - k * S, :] = 1.0
+                            if (j + P - l * S) < WW and (j + P - l * S) >= 0:
+                                mask2[:, :, j + P - l * S] = 1.0
+                            w_masked = np.sum(
+                                w[f, :, :, :] * mask1 * mask2, axis=(1, 2))
+                            dx[nprime, :, i, j] += dout[nprime, f, k, l] * w_masked
 
     return dx, dw, db
 
@@ -597,10 +599,44 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     # version of batch normalization defined above. Your implementation should  #
     # be very short; ours is less than five lines.                              #
     ##########################################################################
-    pass
-    ##########################################################################
-    #                             END OF YOUR CODE                              #
-    ##########################################################################
+
+    N, C, H, W = x.shape
+    mode = bn_param['mode']
+    eps = bn_param.get('eps', 1e-5)
+    momentum = bn_param.get('momentum', 0.9)
+
+    running_mean = bn_param.get('running_mean', np.zeros(C, dtype=x.dtype))
+    running_var = bn_param.get('running_var', np.zeros(C, dtype=x.dtype))
+
+    if mode == 'train':
+        # Step 1 , calcul the average for each channel
+        mu = (1. / (N * H * W) * np.sum(x, axis=(0, 2, 3))).reshape(1, C, 1, 1)
+        var = (1. / (N * H * W) * np.sum((x - mu)**2,
+                                         axis=(0, 2, 3))).reshape(1, C, 1, 1)
+        xhat = (x - mu) / (np.sqrt(eps + var))
+        out = gamma.reshape(1, C, 1, 1) * xhat + beta.reshape(1, C, 1, 1)
+
+        running_mean = momentum * running_mean + \
+            (1.0 - momentum) * np.squeeze(mu)
+        running_var = momentum * running_var + \
+            (1.0 - momentum) * np.squeeze(var)
+
+        cache = (mu, var, x, xhat, gamma, beta)
+
+        # Store the updated running means back into bn_param
+        bn_param['running_mean'] = running_mean
+        bn_param['running_var'] = running_var
+
+    elif mode == 'test':
+        mu = running_mean.reshape(1, C, 1, 1)
+        var = running_var.reshape(1, C, 1, 1)
+
+        xhat = (x - mu) / (np.sqrt(eps + var))
+        out = gamma.reshape(1, C, 1, 1) * xhat + beta.reshape(1, C, 1, 1)
+        cache = (mu, var, x, xhat, gamma, beta)
+
+    else:
+        raise ValueError('Invalid forward batchnorm mode "%s"' % mode)
 
     return out, cache
 
@@ -623,14 +659,18 @@ def spatial_batchnorm_backward(dout, cache):
     ##########################################################################
     # TODO: Implement the backward pass for spatial batch normalization.        #
     #                                                                           #
-    # HINT: You can implement spatial batch normalization using the vanilla     #
+    # HINT: You can implement spatieal batch normalization using the vanilla     #
     # version of batch normalization defined above. Your implementation should  #
     # be very short; ours is less than five lines.                              #
     ##########################################################################
-    pass
-    ##########################################################################
-    #                             END OF YOUR CODE                              #
-    ##########################################################################
+
+    mu, var, x, xhat, gamma, beta = cache
+
+    N, C, H, W = x.shape
+
+    dbeta = np.sum(dout, axis=(0, 2, 3))
+    dgamma = np.sum(dout * xhat, axis=(0, 2, 3))
+    dx = 1.0 / (N * H * W)
 
     return dx, dgamma, dbeta
 
