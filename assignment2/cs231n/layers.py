@@ -621,7 +621,7 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
         running_var = momentum * running_var + \
             (1.0 - momentum) * np.squeeze(var)
 
-        cache = (mu, var, x, xhat, gamma, beta)
+        cache = (mu, var, x, xhat, gamma, beta, bn_param)
 
         # Store the updated running means back into bn_param
         bn_param['running_mean'] = running_mean
@@ -633,7 +633,7 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
 
         xhat = (x - mu) / (np.sqrt(eps + var))
         out = gamma.reshape(1, C, 1, 1) * xhat + beta.reshape(1, C, 1, 1)
-        cache = (mu, var, x, xhat, gamma, beta)
+        cache = (mu, var, x, xhat, gamma, beta, bn_param)
 
     else:
         raise ValueError('Invalid forward batchnorm mode "%s"' % mode)
@@ -664,13 +664,22 @@ def spatial_batchnorm_backward(dout, cache):
     # be very short; ours is less than five lines.                              #
     ##########################################################################
 
-    mu, var, x, xhat, gamma, beta = cache
-
+    mu, var, x, xhat, gamma, beta, bn_param = cache
     N, C, H, W = x.shape
+    mode = bn_param['mode']
+    eps = bn_param.get('eps', 1e-5)
+
+    gamma = gamma.reshape(1, C, 1, 1)
+    beta = beta.reshape(1, C, 1, 1)
 
     dbeta = np.sum(dout, axis=(0, 2, 3))
     dgamma = np.sum(dout * xhat, axis=(0, 2, 3))
-    dx = 1.0 / (N * H * W)
+
+    Nt = N * H * W
+    dx = (1. / Nt) * gamma * (var + eps)**(-1. / 2.) * (
+        Nt * dout
+        - np.sum(dout, axis=(0, 2, 3)).reshape(1, C, 1, 1)
+        - (x - mu) * (var + eps)**(-1.0) * np.sum(dout * (x - mu), axis=(0, 2, 3)).reshape(1, C, 1, 1))
 
     return dx, dgamma, dbeta
 
