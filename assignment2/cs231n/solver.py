@@ -1,8 +1,6 @@
 import numpy as np
 
 from cs231n import optim
-import time
-from tqdm import *
 
 
 class Solver(object):
@@ -222,7 +220,7 @@ class Solver(object):
         iterations_per_epoch = max(num_train / self.batch_size, 1)
         num_iterations = self.num_epochs * iterations_per_epoch
 
-        for t in tqdm(xrange(num_iterations)):
+        for t in xrange(num_iterations):
             self._step()
 
             # Maybe print training loss

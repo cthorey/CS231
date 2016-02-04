@@ -1,7 +1,7 @@
 import os
 import json
 
-DIR_CS231n = '/Users/thorey/Documents/MLearning/CS231/assignment2/'
+DIR_CS231n = '/Users/cthorey/Documents/MLearning/CS231/assignment2/'
 import sys
 sys.path.append(DIR_CS231n)
 import numpy as np
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     # Parameter extraction
     # Model instance
 
-    input_dim = conf.get('input_dim', (3, 32, 32))
+    input_dim = tuple(conf.get('input_dim', (3, 32, 32)))
     num_filters = conf.get('num_filters', 32)
     filter_size = conf.get('filter_size', 7)
     hidden_dim = conf.get('hidden_dim', 100)
@@ -34,11 +34,11 @@ if __name__ == "__main__":
 
     # Solver instance
     update_rule = conf.get('update_rule', 'adam')
-    optim_config = conf.get('optim_config', {'learning_rate': 1e-3}),
-    lr_decay = conf.get('lr_decay', 1.0),
-    batch_size = conf.get('batch_size', 100),
-    num_epochs = conf.get('num_epochs', 10),
-    print_every = conf.get('print_every', 10),
+    optim_config = conf.get('optim_config', {'learning_rate': 1e-3})
+    lr_decay = conf.get('lr_decay', 1.0)
+    batch_size = conf.get('batch_size', 100)
+    num_epochs = conf.get('num_epochs', 10)
+    print_every = conf.get('print_every', 10)
     verbose = conf.get('verbose', True)
 
     # Load the (preprocessed) CIFAR10 data.
@@ -46,6 +46,9 @@ if __name__ == "__main__":
     for k, v in data.iteritems():
         print '%s: ' % k, v.shape
 
+    print 'The parameters are: '
+    for key, value in conf.iteritems():
+        print key + ': ', value, ' \n'
     # Initialize the model instance
     model = ThreeLayerConvNet(input_dim=input_dim,
                               num_filters=num_filters,
