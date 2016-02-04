@@ -5,9 +5,9 @@ from cs231n.fast_layers import *
 from cs231n.layer_utils import *
 
 
-class ThreeLayerConvNet(object):
+class ConvNet(object):
     """
-    A three-layer convolutional network with the following architecture:
+    A convolutional network with the following architecture:
 
     conv - relu - 2x2 max pool - affine - relu - affine - softmax
 
@@ -37,7 +37,6 @@ class ThreeLayerConvNet(object):
         self.params = {}
         self.reg = reg
         self.dtype = dtype
-        self.bn_params = {}
 
         #######################################################################
         # TODO: Initialize weights and biases for the three-layer convolutional    #
@@ -92,13 +91,13 @@ class ThreeLayerConvNet(object):
         b2 = np.zeros(Hh)
 
         # Output affine layer
-        # Size of the parameter (Hh,Hc)
+        # Size of the parameter (Hh,C)
         # Input: (N,Hh)
-        # Output: (N,Hc)
+        # Output: (N,C)
 
-        Hc = num_classes
-        W3 = weight_scale * np.random.randn(Hh, Hc)
-        b3 = np.zeros(Hc)
+        C = num_classes
+        W3 = weight_scale * np.random.randn(Hh, C)
+        b3 = np.zeros(C)
 
         self.params.update({'W1': W1,
                             'W2': W2,
@@ -106,34 +105,6 @@ class ThreeLayerConvNet(object):
                             'b1': b1,
                             'b2': b2,
                             'b3': b3})
-
-        # With batch normalization we need to keep track of running means and
-        # variances, so we need to pass a special bn_param object to each batch
-        # normalization layer. You should pass self.bn_params[0] to the forward pass
-        # of the first batch normalization layer, self.bn_params[1] to the forward
-        # pass of the second batch normalization layer, etc.
-
-        if self.use_batchnorm:
-            print 'We use batchnorm here'
-            bn_param1 = {'mode': 'train',
-                         'running_mean': np.zeros(F),
-                         'running_var': np.zeros(F)}
-            gamma1 = np.ones(F)
-            beta1 = np.zeros(F)
-
-            bn_param2 = {'mode': 'train',
-                         'running_mean': np.zeros(Hh),
-                         'running_var': np.zeros(Hh)}
-            gamma2 = np.ones(Hh)
-            beta2 = np.zeros(Hh)
-
-            self.bn_params.update({'bn_param1': bn_param1,
-                                   'bn_param2': bn_param2})
-
-            self.params.update({'beta1': beta1,
-                                'beta2': beta2,
-                                'gamma1': gamma1,
-                                'gamma2': gamma2})
 
         for k, v in self.params.iteritems():
             self.params[k] = v.astype(dtype)
@@ -144,23 +115,12 @@ class ThreeLayerConvNet(object):
 
         Input / output: Same API as TwoLayerNet in fc_net.py.
         """
-        X = X.astype(self.dtype)
-        mode = 'test' if y is None else 'train'
-
-        if self.use_batchnorm:
-            for key, bn_param in self.bn_params.iteritems():
-                bn_param[mode] = mode
 
         N = X.shape[0]
 
         W1, b1 = self.params['W1'], self.params['b1']
         W2, b2 = self.params['W2'], self.params['b2']
         W3, b3 = self.params['W3'], self.params['b3']
-        if self.use_batchnorm:
-            bn_param1, gamma1, beta1 = self.bn_params[
-                'bn_param1'], self.params['gamma1'], self.params['beta1']
-            bn_param2, gamma2, beta2 = self.bn_params[
-                'bn_param2'], self.params['gamma2'], self.params['beta2']
 
         # pass conv_param to the forward pass for the convolutional layer
         filter_size = W1.shape[2]
@@ -180,30 +140,15 @@ class ThreeLayerConvNet(object):
         x = X
         w = W1
         b = b1
-        if self.use_batchnorm:
-            beta = beta1
-            gamma = gamma1
-            bn_param = bn_param1
-            conv_layer, cache_conv_layer = conv_norm_relu_pool_forward(
-                x, w, b, conv_param, pool_param, gamma, beta, bn_param)
-        else:
-            conv_layer, cache_conv_layer = conv_relu_pool_forward(
-                x, w, b, conv_param, pool_param)
-
+        conv_layer, cache_conv_layer = conv_relu_pool_forward(
+            x, w, b, conv_param, pool_param)
         N, F, Hp, Wp = conv_layer.shape  # output shape
 
         # Forward into the hidden layer
         x = conv_layer.reshape((N, F * Hp * Wp))
         w = W2
         b = b2
-        if self.use_batchnorm:
-            gamma = gamma2
-            beta = beta2
-            bn_param = bn_param2
-            hidden_layer, cache_hidden_layer = affine_norm_relu_forward(
-                x, w, b, gamma, beta, bn_param)
-        else:
-            hidden_layer, cache_hidden_layer = affine_relu_forward(x, w, b)
+        hidden_layer, cache_hidden_layer = affine_relu_forward(x, w, b)
         N, Hh = hidden_layer.shape
 
         # Forward into the linear output layer
@@ -236,22 +181,12 @@ class ThreeLayerConvNet(object):
         dW3 += self.reg * W3
 
         # Backprop into first layer
-        if self.use_batchnorm:
-            dx2, dW2, db2, dgamma2, dbeta2 = affine_norm_relu_backward(
-                dx3, cache_hidden_layer)
-        else:
-            dx2, dW2, db2 = affine_relu_backward(dx3, cache_hidden_layer)
-
+        dx2, dW2, db2 = affine_relu_backward(dx3, cache_hidden_layer)
         dW2 += self.reg * W2
 
         # Backprop into the conv layer
         dx2 = dx2.reshape(N, F, Hp, Wp)
-        if self.use_batchnorm:
-            dx, dW1, db1, dgamma1, dbeta1 = conv_norm_relu_pool_backward(
-                dx2, cache_conv_layer)
-        else:
-            dx, dW1, db1 = conv_relu_pool_backward(dx2, cache_conv_layer)
-
+        dx, dW1, db1 = conv_relu_pool_backward(dx2, cache_conv_layer)
         dW1 += self.reg * W1
 
         grads.update({'W1': dW1,
@@ -260,12 +195,6 @@ class ThreeLayerConvNet(object):
                       'b2': db2,
                       'W3': dW3,
                       'b3': db3})
-
-        if self.use_batchnorm:
-            grads.update({'beta1': dbeta1,
-                          'beta2': dbeta2,
-                          'gamma1': dgamma1,
-                          'gamma2': dgamma2})
 
         #######################################################################
         #                             END OF YOUR CODE                             #
