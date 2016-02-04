@@ -1,0 +1,20 @@
+{
+    "batch_size": 100, 
+    "filter_size": 7, 
+    "hidden_dim": 100, 
+    "input_dim": [
+        3, 
+        32, 
+        32
+    ], 
+    "lr_decay": 1.0, 
+    "num_classes": 10, 
+    "num_epochs": 10, 
+    "num_filters": 32, 
+    "optim_config": {}, 
+    "print_every": 10, 
+    "update_rule": "adam", 
+    "use_batchnorm": true, 
+    "verbose": true, 
+    "weight_scale": 0.001
+}
