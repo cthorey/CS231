@@ -1,5 +1,6 @@
 import numpy as np
-
+import os
+from sklearn.externals import joblib
 from cs231n import optim
 
 
@@ -71,7 +72,7 @@ class Solver(object):
         names to gradients of the loss with respect to those parameters.
     """
 
-    def __init__(self, model, data, **kwargs):
+    def __init__(self, model, data, path,  **kwargs):
         """
         Construct a new Solver instance.
 
@@ -102,6 +103,7 @@ class Solver(object):
         """
 
         self.model = model
+        self.path = path
         self.X_train = data['X_train']
         self.y_train = data['y_train']
         self.X_val = data['X_val']
@@ -114,6 +116,7 @@ class Solver(object):
         self.batch_size = kwargs.pop('batch_size', 100)
         self.num_epochs = kwargs.pop('num_epochs', 10)
 
+        self.check_points_every = kwargs.pop('check_point_every', 10)
         self.print_every = kwargs.pop('print_every', 10)
         self.verbose = kwargs.pop('verbose', True)
 
@@ -171,6 +174,49 @@ class Solver(object):
             next_w, next_config = self.update_rule(w, dw, config)
             self.model.params[p] = next_w
             self.optim_configs[p] = next_config
+
+    def load_current_checkpoints(self):
+        ''' Return the current checkpoint '''
+
+        checkpoints = os.listdir(os.path.join(self.path, 'checkpoints'))
+        if len(checkpoints) == 0:
+            name = os.path.join(checkpoints, 'check_' + str(1))
+        else:
+            num = max([int(f.split('_')[1]) for f in checkpoints])
+            name = os.path.join(checkpoints, 'check_' + str(num))
+
+        return num, joblib.load(name + '.pkl')
+
+    def make_check_point(self):
+
+        num, last_checkpoints = self.load_current_checkpoints()
+
+        epoch = self.epoch + last_checkpoints['epoch']
+        if self.best_val_acc > last_checkpoints['best_val_acc']:
+            best_val_acc = self.best_val_acc
+            best_params = self.best_params
+        else:
+            best_val_acc = last_checkpoints['best_val_acc']
+            best_params = last_checkpoints['best_param']
+            loss_history = last_checkpoints['loss_history'] + self.loss_history
+            train_acc_history = last_checkpoints[
+                'train_acc_history'] + self.train_acc_history
+            val_acc_history = last_checkpoints[
+                'val_acc_history'] + self.val_acc_history
+
+        checkpoints = {
+            'model': self.model,
+            'epoch': epoch,
+            'best_val_acc': best_val_acc,
+            'best_params': best_params,
+            'best_val_acc': best_val_acc,
+            'best_params': best_params,
+            'loss_history': loss_history,
+            'train_acc_history': train_acc_history,
+            'val_acc_history': val_acc_history}
+
+        name = os.path.join(checkpoints, 'check_' + str(num + 1))
+        joblib.dump(name + '.pkl')
 
     def check_accuracy(self, X, y, num_samples=None, batch_size=100):
         """
@@ -258,5 +304,10 @@ class Solver(object):
                     for k, v in self.model.params.iteritems():
                         self.best_params[k] = v.copy()
 
+            # Make a checkpoint of the model
+            if self.epoch % self.check_points_every == 0:
+                self.make_check_point()
+
         # At the end of training swap the best params into the model
         self.model.params = self.best_params
+        self.make_check_point()

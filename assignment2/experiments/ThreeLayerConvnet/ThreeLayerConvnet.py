@@ -40,6 +40,11 @@ if __name__ == "__main__":
     num_epochs = conf.get('num_epochs', 10)
     print_every = conf.get('print_every', 10)
     verbose = conf.get('verbose', True)
+    path = conf.get('path', '')
+
+    if path == '':
+        raise ValueError('You have to set a path where \
+                         the model is suppose to run')
 
     # Load the (preprocessed) CIFAR10 data.
     data = get_CIFAR10_data(DIR_CS231n)
@@ -49,6 +54,7 @@ if __name__ == "__main__":
     print 'The parameters are: '
     for key, value in conf.iteritems():
         print key + ': ', value, ' \n'
+
     # Initialize the model instance
     model = ThreeLayerConvNet(input_dim=input_dim,
                               num_filters=num_filters,
@@ -63,6 +69,7 @@ if __name__ == "__main__":
     # Run the training
     solver = Solver(model=model,
                     data=data,
+                    path=path,
                     update_rule=update_rule,
                     optim_config=optim_config,
                     lr_decay=lr_decay,

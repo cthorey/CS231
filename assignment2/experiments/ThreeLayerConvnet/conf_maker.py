@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import numpy as np
 
@@ -24,9 +25,36 @@ conf['num_epochs'] = 1
 conf['print_every'] = 10
 conf['verbose'] = True
 
-name_json = os.path.join(DIR_CS231n, 'experiments',
-                         'ThreeLayerConvnet', 'model_0')
-with open(name_json + '.json', 'w+') as f:
+# Helper function
+
+
+def name_model(path):
+    ''' Given a directory where you want to run a new model
+    automatically select the name of the model by incrementing
+    by 1 the largest previous model in the name'''
+
+    existing_models = [f for f in os.listdir(
+        path) if f.split('_')[0] == 'model']
+    if len(existing_models) == 0:
+        model = -1
+    else:
+        model = max([int(f.split('_')[1]) for f in existing_models])
+    return os.path.join(path, 'model_' + str(model + 1))
+
+name = os.listdir(DIR_CS231n)
+dir_json = name_model(os.path.join(
+    DIR_CS231n, 'experiments', 'ThreeLayerConvnet'))
+
+conf['path'] = dir_json
+
+try:
+    os.mkdir(dir_json)
+    os.mkdir(os.path.join(dir_json, 'checkpoints'))
+except:
+    raise ValueError(
+        'Cannot create the directory for the model %s' % (dir_json))
+
+with open(os.path.join(dir_json, 'conf_init.json'), 'w+') as f:
     json.dump(conf,
               f,
               sort_keys=True,

@@ -14,6 +14,7 @@
     "optim_config": {
         "learning_rate": 0.001
     }, 
+    "path": "/Users/cthorey/Documents/MLearning/CS231/assignment2/experiments/ThreeLayerConvnet/model_0", 
     "print_every": 10, 
     "update_rule": "adam", 
     "use_batchnorm": true, 
