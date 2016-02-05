@@ -1,5 +1,6 @@
 import os
 import sys
+from sklearn.externals import joblib
 import json
 import numpy as np
 
@@ -18,7 +19,6 @@ conf['use_batchnorm'] = True
 
 # Solver instance
 conf['update_rule'] = 'adam'
-conf['optim_config'] = {'learning_rate': 1e-3}
 conf['lr_decay'] = 0.99
 conf['batch_size'] = 50
 conf['num_epochs'] = 1
@@ -48,8 +48,8 @@ dir_json = name_model(os.path.join(
 conf['path'] = dir_json
 
 try:
+    'Initialize the model tree'
     os.mkdir(dir_json)
-    os.mkdir(os.path.join(dir_json, 'checkpoints'))
 except:
     raise ValueError(
         'Cannot create the directory for the model %s' % (dir_json))

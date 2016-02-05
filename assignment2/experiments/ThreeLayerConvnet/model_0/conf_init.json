@@ -11,9 +11,6 @@
     "num_classes": 10, 
     "num_epochs": 1, 
     "num_filters": 64, 
-    "optim_config": {
-        "learning_rate": 0.001
-    }, 
     "path": "/Users/cthorey/Documents/MLearning/CS231/assignment2/experiments/ThreeLayerConvnet/model_0", 
     "print_every": 10, 
     "update_rule": "adam", 
