@@ -117,7 +117,7 @@ class SolverCheckpoints(object):
         self.batch_size = kwargs.pop('batch_size', 100)
         self.num_epochs = kwargs.pop('num_epochs', 10)
 
-        self.check_points_every = kwargs.pop('check_point_every', 1)
+        self.check_points_every = kwargs.pop('check_points_every', 1)
         self.print_every = kwargs.pop('print_every', 10)
         self.verbose = kwargs.pop('verbose', True)
 
@@ -188,28 +188,21 @@ class SolverCheckpoints(object):
 
         num, last_checkpoints = self.load_current_checkpoints()
 
-        epoch = self.epoch + last_checkpoints['epoch']
         if self.best_val_acc > last_checkpoints['best_val_acc']:
             best_val_acc = self.best_val_acc
             best_params = self.best_params
         else:
             best_val_acc = last_checkpoints['best_val_acc']
             best_params = last_checkpoints['best_params']
-        loss_history = last_checkpoints['loss_history'] + self.loss_history
-        train_acc_history = last_checkpoints[
-            'train_acc_history'] + self.train_acc_history
-        val_acc_history = last_checkpoints[
-            'val_acc_history'] + self.val_acc_history
 
         checkpoints = {
             'model': self.model,
-            'epoch': epoch,
-            'best_val_acc': best_val_acc,
+            'epoch': self.epoch,
             'best_params': best_params,
             'best_val_acc': best_val_acc,
-            'loss_history': loss_history,
-            'train_acc_history': train_acc_history,
-            'val_acc_history': val_acc_history}
+            'loss_history': self.loss_history,
+            'train_acc_history': self.train_acc_history,
+            'val_acc_history': self.val_acc_history}
 
         name = 'check_' + str(num + 1)
         os.mkdir(os.path.join(self.path_checkpoints, name))
@@ -417,7 +410,7 @@ class Solver(object):
         # Unpack keyword arguments
         self.update_rule = kwargs.pop('update_rule', 'sgd')
         self.optim_config = kwargs.pop('optim_config', {})
-        self.lr_decay = kwargs.pop('lr_decay', 1.0)
+        self.lr_decay = kwargs.pop('lr_decay', 0.95)
         self.batch_size = kwargs.pop('batch_size', 100)
         self.num_epochs = kwargs.pop('num_epochs', 10)
 
