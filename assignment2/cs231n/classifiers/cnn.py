@@ -16,7 +16,7 @@ class FirstConvNet(object):
     channels.
     """
 
-    def __init__(self, input_dim=(3, 32, 32), num_filters=[16, 32, 64], filter_size=3,
+    def __init__(self, input_dim=(3, 32, 32), num_filters=[16, 32], filter_size=3,
                  hidden_dims=[100, 100], num_classes=10, weight_scale=1e-3, reg=0.0,
                  dtype=np.float32, use_batchnorm=False):
         """
@@ -59,6 +59,17 @@ class FirstConvNet(object):
             b = np.zeros(F[i + 1])
             self.params.update({'W' + str(idx): W,
                                 'b' + str(idx): b})
+            if self.use_batchnorm:
+                bn_param = {'mode': 'train',
+                            'running_mean': np.zeros(F[i + 1]),
+                            'running_var': np.zeros(F[i + 1])}
+                gamma = np.ones(F[i + 1])
+                beta = np.zeros(F[i + 1])
+                self.bn_params.update({
+                    'bn_param' + str(idx): bn_param})
+                self.params.update({
+                    'gamma' + str(idx): gamma,
+                    'beta' + str(idx): beta})
 
         # Initialize the weights for the affine-relu layers
         # Size of the last activation
@@ -72,9 +83,20 @@ class FirstConvNet(object):
             b = np.zeros(dims[i + 1])
             self.params.update({'W' + str(idx): W,
                                 'b' + str(idx): b})
+            if self.use_batchnorm:
+                bn_param = {'mode': 'train',
+                            'running_mean': np.zeros(dims[i + 1]),
+                            'running_var': np.zeros(dims[i + 1])}
+                gamma = np.ones(dims[i + 1])
+                beta = np.zeros(dims[i + 1])
+                self.bn_params.update({
+                    'bn_param' + str(idx): bn_param})
+                self.params.update({
+                    'gamma' + str(idx): gamma,
+                    'beta' + str(idx): beta})
 
         # Scoring layer
-        W = weight_scale * np.random.rand(dims[-1], num_classes)
+        W = weight_scale * np.random.randn(dims[-1], num_classes)
         b = np.zeros(num_classes)
         self.params.update({'W' + str(self.L + self.M + 1): W,
                             'b' + str(self.L + self.M + 1): b})
@@ -116,6 +138,10 @@ class FirstConvNet(object):
         # pass pool_param to the forward pass for the max-pooling layer
         pool_param = {'pool_height': 2, 'pool_width': 2, 'stride': 2}
 
+        if self.use_batchnorm:
+            for key, bn_param in self.bn_params.iteritems():
+                bn_param[mode] = mode
+
         scores = None
         #######################################################################
         # TODO: Implement the forward pass for the three-layer convolutional net,  #
@@ -131,10 +157,15 @@ class FirstConvNet(object):
             w = self.params['W' + str(idx)]
             b = self.params['b' + str(idx)]
             h = blocks['h' + str(idx - 1)]
-            print i, w.shape, b.shape, h.shape
-            h, cache_h = conv_relu_pool_forward(
-                h, w, b, conv_param, pool_param)
-            print h.shape, conv_param['pad'], conv_param['stride']
+            if self.use_batchnorm:
+                beta = self.params['beta' + str(idx)]
+                gamma = self.params['gamma' + str(idx)]
+                bn_param = self.bn_params['bn_param' + str(idx)]
+                h, cache_h = conv_norm_relu_pool_forward(
+                    h, w, b, conv_param, pool_param, gamma, beta, bn_param)
+            else:
+                h, cache_h = conv_relu_pool_forward(
+                    h, w, b, conv_param, pool_param)
             blocks['h' + str(idx)] = h
             blocks['cache_h' + str(idx)] = cache_h
 
@@ -146,7 +177,14 @@ class FirstConvNet(object):
                 h = h.reshape(N, np.product(h.shape[1:]))
             w = self.params['W' + str(idx)]
             b = self.params['b' + str(idx)]
-            h, cache_h = affine_relu_forward(h, w, b)
+            if self.use_batchnorm:
+                beta = self.params['beta' + str(idx)]
+                gamma = self.params['gamma' + str(idx)]
+                bn_param = self.bn_params['bn_param' + str(idx)]
+                h, cache_h = affine_norm_relu_forward(h, w, b, gamma,
+                                                      beta, bn_param)
+            else:
+                h, cache_h = affine_relu_forward(h, w, b)
             blocks['h' + str(idx)] = h
             blocks['cache_h' + str(idx)] = cache_h
 
@@ -161,8 +199,6 @@ class FirstConvNet(object):
 
         scores = blocks['h' + str(idx)]
 
-        return blocks
-        sys.exit()
         if y is None:
             return scores
 
@@ -182,47 +218,69 @@ class FirstConvNet(object):
 
         loss = data_loss + reg_loss
 
-        # Backpropagation
+        # Backward pass
+        # print 'Backward pass'
+        # Backprop into the scoring layer
+        idx = self.L + self.M + 1
+        dh = dscores
+        h_cache = blocks['cache_h' + str(idx)]
+        dh, dw, db = affine_backward(dh, h_cache)
+        blocks['dh' + str(idx - 1)] = dh
+        blocks['dW' + str(idx)] = dw
+        blocks['db' + str(idx)] = db
+
+        # Backprop into the linear blocks
+        for i in range(self.M)[::-1]:
+            idx = self.L + i + 1
+            dh = blocks['dh' + str(idx)]
+            h_cache = blocks['cache_h' + str(idx)]
+            if self.use_batchnorm:
+                dh, dw, db, dgamma, dbeta = affine_norm_relu_backward(
+                    dh, h_cache)
+                blocks['dbeta' + str(idx)] = dbeta
+                blocks['dgamma' + str(idx)] = dgamma
+            else:
+                dh, dw, db = affine_relu_backward(dh, h_cache)
+            blocks['dh' + str(idx - 1)] = dh
+            blocks['dW' + str(idx)] = dw
+            blocks['db' + str(idx)] = db
+
+        # Backprop into the conv blocks
+        for i in range(self.L)[::-1]:
+            idx = i + 1
+            dh = blocks['dh' + str(idx)]
+            h_cache = blocks['cache_h' + str(idx)]
+            if i == max(range(self.L)[::-1]):
+                dh = dh.reshape(*blocks['h' + str(idx)].shape)
+            if self.use_batchnorm:
+                dh, dw, db, dgamma, dbeta = conv_norm_relu_pool_backward(
+                    dh, h_cache)
+                blocks['dbeta' + str(idx)] = dbeta
+                blocks['dgamma' + str(idx)] = dgamma
+            else:
+                dh, dw, db = conv_relu_pool_backward(dh, h_cache)
+            blocks['dh' + str(idx - 1)] = dh
+            blocks['dW' + str(idx)] = dw
+            blocks['db' + str(idx)] = db
+
+        # w gradients where we add the regulariation term
+        list_dw = {key[1:]: val + self.reg * self.params[key[1:]]
+                   for key, val in blocks.iteritems() if key[:2] == 'dW'}
+        # Paramerters b
+        list_db = {key[1:]: val for key, val in blocks.iteritems() if key[:2] ==
+                   'db'}
+        # Parameters gamma
+        list_dgamma = {key[1:]: val for key, val in blocks.iteritems() if key[
+            :6] == 'dgamma'}
+        # Paramters beta
+        list_dbeta = {key[1:]: val for key, val in blocks.iteritems() if key[
+            :5] == 'dbeta'}
+
         grads = {}
-        # Backprop into output layer
-        dx3, dW3, db3 = affine_backward(dscores, cache_scores)
-        dW3 += self.reg * W3
-
-        # Backprop into first layer
-        if self.use_batchnorm:
-            dx2, dW2, db2, dgamma2, dbeta2 = affine_norm_relu_backward(
-                dx3, cache_hidden_layer)
-        else:
-            dx2, dW2, db2 = affine_relu_backward(dx3, cache_hidden_layer)
-
-        dW2 += self.reg * W2
-
-        # Backprop into the conv layer
-        dx2 = dx2.reshape(N, F, Hp, Wp)
-        if self.use_batchnorm:
-            dx, dW1, db1, dgamma1, dbeta1 = conv_norm_relu_pool_backward(
-                dx2, cache_conv_layer)
-        else:
-            dx, dW1, db1 = conv_relu_pool_backward(dx2, cache_conv_layer)
-
-        dW1 += self.reg * W1
-
-        grads.update({'W1': dW1,
-                      'b1': db1,
-                      'W2': dW2,
-                      'b2': db2,
-                      'W3': dW3,
-                      'b3': db3})
-
-        if self.use_batchnorm:
-            grads.update({'beta1': dbeta1,
-                          'beta2': dbeta2,
-                          'gamma1': dgamma1,
-                          'gamma2': dgamma2})
-
-        #######################################################################
-        #                             END OF YOUR CODE                             #
-        #######################################################################
+        grads.update(list_dw)
+        grads.update(list_db)
+        grads.update(list_dgamma)
+        grads.update(list_dbeta)
 
         return loss, grads
 
