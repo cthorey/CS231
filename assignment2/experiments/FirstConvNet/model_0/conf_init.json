@@ -1,0 +1,30 @@
+{
+    "batch_size": 50, 
+    "check_points_every": 1, 
+    "filter_size": 3, 
+    "hidden_dim": [
+        500, 
+        500
+    ], 
+    "input_dim": [
+        3, 
+        32, 
+        32
+    ], 
+    "lr_decay": 0.95, 
+    "num_classes": 10, 
+    "num_epochs": 100, 
+    "num_filters": [
+        16, 
+        32, 
+        64, 
+        128, 
+        256
+    ], 
+    "path": "/Users/cthorey/Documents/MLearning/CS231/assignment2/experiments/FirstConvNet/model_0", 
+    "print_every": 100, 
+    "update_rule": "adam", 
+    "use_batchnorm": true, 
+    "verbose": true, 
+    "weight_scale": 0.05
+}

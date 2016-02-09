@@ -10,9 +10,9 @@ conf = {}
 
 # Model instance
 conf['input_dim'] = (3, 32, 32)
-conf['num_filters'] = [16, 32, 64, 128]
+conf['num_filters'] = [16, 32, 64, 128, 256]
 conf['filter_size'] = 3
-conf['hidden_dim'] = [256, 256]
+conf['hidden_dim'] = [500, 500]
 conf['num_classes'] = 10
 conf['weight_scale'] = 5e-2
 conf['use_batchnorm'] = True
@@ -21,14 +21,10 @@ conf['use_batchnorm'] = True
 conf['update_rule'] = 'adam'
 conf['lr_decay'] = 0.95
 conf['batch_size'] = 50
-conf['num_epochs'] = 3
-conf['print_every'] = 10
+conf['num_epochs'] = 100
+conf['print_every'] = 100
 conf['verbose'] = True
 conf['check_points_every'] = 1
-
-# Hyperparameter settings
-conf['reg'] = 1e-2
-conf['lr'] = 1e-3
 
 # Helper function
 

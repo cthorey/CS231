@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     # Create a folder for a specific lr,reg
     # Initialize the folder that contain this code
-    name_folder = 'lr' + str(lr) + '_reg' + str(reg)
+    name_folder = 'lr' + str(lr) + '_reg' + str(rg)
     folder = os.path.join(path, name_folder)
     os.mkdir(folder)
     os.mkdir(os.path.join(folder, 'checkpoints'))
