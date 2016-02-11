@@ -7,12 +7,12 @@ from sklearn.externals import joblib
 sys.path.append(DIR_CS231n)
 import numpy as np
 import matplotlib.pyplot as plt
-from cs231n.classifiers.cnn import ThreeLayerConvNet
+from cs231n.classifiers.cnn import FirstConvNet
 from cs231n.data_utils import get_CIFAR10_data
 from cs231n.gradient_check import eval_numerical_gradient_array, eval_numerical_gradient
 from cs231n.layers import *
 from cs231n.fast_layers import *
-from cs231n.solver import Solver
+from cs231n.solver import SolverCheckpoints
 
 if __name__ == "__main__":
     conf_file = sys.argv[1]
@@ -23,12 +23,16 @@ if __name__ == "__main__":
         conf = json.load(f)
 
     # Parameter extraction
-    # Model instance
 
+    # Hyperparameter
+    # lr = conf['lr']
+    # rg = conf['reg']
+
+    # Model instance
     input_dim = tuple(conf.get('input_dim', (3, 32, 32)))
     num_filters = conf.get('num_filters', 32)
     filter_size = conf.get('filter_size', 7)
-    hidden_dim = conf.get('hidden_dim', 100)
+    hidden_dims = conf.get('hidden_dim', 100)
     num_classes = conf.get('num_classes', 10)
     weight_scale = conf.get('weight_scale', 1e-3)
     reg = conf.get('reg', float(rg))
@@ -44,6 +48,7 @@ if __name__ == "__main__":
     print_every = conf.get('print_every', 10)
     verbose = conf.get('verbose', True)
     path = conf.get('path', '')
+    check_points_every = conf.get('check_points_every', 1)
 
     if path == '':
         raise ValueError('You have to set a path where \
@@ -51,7 +56,7 @@ if __name__ == "__main__":
 
     # Create a folder for a specific lr,reg
     # Initialize the folder that contain this code
-    name_folder = 'lr' + str(lr) + '_reg' + str(reg)
+    name_folder = 'lr' + str(lr) + '_reg' + str(rg)
     folder = os.path.join(path, name_folder)
     os.mkdir(folder)
     os.mkdir(os.path.join(folder, 'checkpoints'))
@@ -79,26 +84,27 @@ if __name__ == "__main__":
         print key + ': ', value, ' \n'
 
     # Initialize the model instance
-    model = ThreeLayerConvNet(input_dim=input_dim,
-                              num_filters=num_filters,
-                              filter_size=filter_size,
-                              hidden_dim=hidden_dim,
-                              num_classes=num_classes,
-                              weight_scale=weight_scale,
-                              reg=reg,
-                              dtype=dtype,
-                              use_batchnorm=use_batchnorm)
+    model = FirstConvNet(input_dim=input_dim,
+                         num_filters=num_filters,
+                         filter_size=filter_size,
+                         hidden_dims=hidden_dims,
+                         num_classes=num_classes,
+                         weight_scale=weight_scale,
+                         reg=reg,
+                         dtype=dtype,
+                         use_batchnorm=use_batchnorm)
 
     # Run the training
-    solver = Solver(model=model,
-                    data=data,
-                    path=path,
-                    update_rule=update_rule,
-                    optim_config=optim_config,
-                    lr_decay=lr_decay,
-                    batch_size=batch_size,
-                    num_epochs=num_epochs,
-                    print_every=print_every,
-                    verbose=verbose)
+    solver = SolverCheckpoints(model=model,
+                               data=data,
+                               path=path,
+                               update_rule=update_rule,
+                               optim_config=optim_config,
+                               lr_decay=lr_decay,
+                               batch_size=batch_size,
+                               num_epochs=num_epochs,
+                               print_every=print_every,
+                               check_points_every=check_points_every,
+                               verbose=verbose)
 
     solver.train()

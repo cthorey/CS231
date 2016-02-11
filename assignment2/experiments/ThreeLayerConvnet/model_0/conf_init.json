@@ -1,0 +1,20 @@
+{
+    "batch_size": 50, 
+    "filter_size": 3, 
+    "hidden_dim": 500, 
+    "input_dim": [
+        3, 
+        32, 
+        32
+    ], 
+    "lr_decay": 0.99, 
+    "num_classes": 10, 
+    "num_epochs": 1, 
+    "num_filters": 64, 
+    "path": "/Users/cthorey/Documents/MLearning/CS231/assignment2/experiments/ThreeLayerConvnet/model_0", 
+    "print_every": 10, 
+    "update_rule": "adam", 
+    "use_batchnorm": true, 
+    "verbose": true, 
+    "weight_scale": 0.001
+}
