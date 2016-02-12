@@ -77,25 +77,25 @@ def vis_nn(rows):
     return G
 
 
-def inspect_solvers(solvers):
+def inspect_checkpoint(checks):
     ''' solvers is a dict with key:solver.
     Return a plot with the different loss on of top of another '''
 
     fig = plt.figure(figsize=(10, 30))
-    height = len(solvers) + 1
+    height = len(checks) + 1
     ax = plt.subplot(height, 1, 1)
-    axs = [plt.subplot(height, 1, i + 2) for i in range(len(solvers))]
+    axs = [plt.subplot(height, 1, i + 2) for i in range(len(checks))]
 
     i = 0
-    for key, solver in solvers.iteritems():
-        ax.plot(solver.loss_history, label=key)
+    for key, check in checks.iteritems():
+        ax.plot(check['loss_history'], label=key)
         ax.legend(fontsize=24)
         ax.tick_params(labelsize=24)
         ax.set_xlabel('epoch')
         ax.set_ylabel('accuracy')
 
-        axs[i].plot(solver.train_acc_history)
-        axs[i].plot(solver.val_acc_history)
+        axs[i].plot(check['train_acc_history'])
+        axs[i].plot(check['val_acc_history'])
         axs[i].legend(['train', 'val'], loc='upper left')
         axs[i].set_xlabel('epoch')
         axs[i].set_ylabel('accuracy')

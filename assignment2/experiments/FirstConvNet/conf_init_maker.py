@@ -4,13 +4,13 @@ from sklearn.externals import joblib
 import json
 import numpy as np
 
-DIR_CS231n = '/Users/cthorey/Documents/MLearning/CS231/assignment2/'
+DIR_CS231n = '/Users/clement/Documents/MLearning/CS231/assignment2/'
 
 conf = {}
 
 # Model instance
 conf['input_dim'] = (3, 32, 32)
-conf['num_filters'] = [16, 32, 64, 128, 256]
+conf['num_filters'] = [16, 32, 64, 128]
 conf['filter_size'] = 3
 conf['hidden_dim'] = [500, 500]
 conf['num_classes'] = 10
@@ -21,9 +21,9 @@ conf['use_batchnorm'] = True
 conf['update_rule'] = 'adam'
 conf['lr_decay'] = 0.95
 conf['batch_size'] = 50
-conf['num_epochs'] = 100
-conf['print_every'] = 100
-conf['verbose'] = True
+conf['num_epochs'] = 2000
+conf['print_every'] = 10
+conf['verbose'] = False
 conf['check_points_every'] = 1
 
 # Helper function
