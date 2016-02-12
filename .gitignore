@@ -1,5 +1,5 @@
 # Byte-compiled / optimized / DLL files
-
+datasets*
 theano_tuto*
 __pycache__/
 *.py[cod]
