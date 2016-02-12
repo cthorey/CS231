@@ -1,4 +1,6 @@
 # Byte-compiled / optimized / DLL files
+
+theano_tuto*
 __pycache__/
 *.py[cod]
 *$py.class
