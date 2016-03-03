@@ -149,7 +149,7 @@ def rnn_backward(dh, cache):
     - db: Gradient of biases, of shape (H,)
     """
     dx, dh0, dWx, dWh, db = None, None, None, None, None
-    print 'hello'
+
     ##########################################################################
     # TODO: Implement the backward pass for a vanilla RNN running an entire      #
     # sequence of data. You should use the rnn_step_backward function that you   #
@@ -170,12 +170,14 @@ def rnn_backward(dh, cache):
 
     # On transpose dh
     dh = dh.transpose(1, 0, 2)
+    dh_prev = np.zeros((N, H))
 
     for t in reversed(xrange(T)):
-        dx[t], dprev_h, dWx_t, dWh_t, db_t = rnn_step_backward(
-            dh[t] + dprev_h, cache[t])
+        dh_current = dh[t] + dh_prev
+        dx_t, dh_prev, dWx_t, dWh_t, db_t = rnn_step_backward(
+            dh_current, cache[t])
         dx[t] += dx_t
-        dh0 += dh0_t
+        dh0 = dh_prev
         dWx += dWx_t
         dWh += dWh_t
         db += db_t
@@ -205,10 +207,9 @@ def word_embedding_forward(x, W):
     #                                                                            #
     # HINT: This should be very simple.                                          #
     ##########################################################################
-    pass
-    ##########################################################################
-    #                               END OF YOUR CODE                             #
-    ##########################################################################
+    out = W[x, :]
+    cache = x, W
+
     return out, cache
 
 
