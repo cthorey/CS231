@@ -234,10 +234,9 @@ def word_embedding_backward(dout, cache):
     #                                                                            #
     # HINT: Look up the function np.add.at                                       #
     ##########################################################################
-    pass
-    ##########################################################################
-    #                               END OF YOUR CODE                             #
-    ##########################################################################
+    x, W = cache
+    dW = np.zeros_like(W)
+    np.add.at(dW, x, dout)
     return dW
 
 
