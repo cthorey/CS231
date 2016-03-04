@@ -144,7 +144,12 @@ class CaptioningRNN(object):
         x, cache_embedding = word_embedding_forward(captions_in, W_embed)
 
         # Step 3
-        h, cache_rnn = rnn_forward(x, h0, Wx, Wh, b)
+        if self.cell_type == 'rnn':
+            h, cache_rnn = rnn_forward(x, h0, Wx, Wh, b)
+        elif self.cell_type == 'lstm':
+            h, cache_rnn = lstm_forward(x, h0, Wx, Wh, b)
+        else:
+            raise ValueError('%s not implemented' % (self.cell_type))
 
         # Step 4
         scores, cache_scores = temporal_affine_forward(h, W_vocab, b_vocab)
@@ -161,7 +166,12 @@ class CaptioningRNN(object):
             dscores, cache_scores)
 
         # Backward into step 3
-        dx, dh0, dWx, dWh, db = rnn_backward(dh, cache_rnn)
+        if self.cell_type == 'rnn':
+            dx, dh0, dWx, dWh, db = rnn_backward(dh, cache_rnn)
+        elif self.cell_type == 'lstm':
+            dx, dh0, dWx, dWh, db = lstm_backward(dh, cache_rnn)
+        else:
+            raise ValueError('%s not implemented' % (self.cell_type))
 
         # Backward into step 2
         dW_embed = word_embedding_backward(dx, cache_embedding)
@@ -239,17 +249,28 @@ class CaptioningRNN(object):
 
         # Get first hidden state
         h0 = np.dot(features, W_proj) + b_proj
-        print h0.shape
 
         captions[:, 0] = self._start
-        prev_h = h0[:, np.newaxis, :]
+        prev_h = h0
+        prev_c = np.zeros_like(h0)
+
         for t in map(lambda x: x + 1, range(max_length))[:-1]:
             capt = captions[:, t - 1][:, np.newaxis]
             word_embed, _ = word_embedding_forward(capt, W_embed)
-            h, _ = rnn_step_forward(word_embed, prev_h, Wx, Wh, b)
-            scores, _ = temporal_affine_forward(h, W_vocab, b_vocab)
+            if self.cell_type == 'rnn':
+                h, _ = rnn_step_forward(np.squeeze(
+                    word_embed), prev_h, Wx, Wh, b)
+            elif self.cell_type == 'lstm':
+                h, prev_c, _ = lstm_step_forward(
+                    np.squeeze(word_embed), prev_h, prev_c, Wx, Wh, b)
+            else:
+                raise ValueError('%s not implemented' % (self.cell_type))
+
+            scores, _ = temporal_affine_forward(
+                h[:, np.newaxis, :], W_vocab, b_vocab)
             idx = np.argmax(scores, axis=2)
             captions[:, t - 1] = idx[:, 0]
+
             prev_h = h
 
         return captions
