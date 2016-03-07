@@ -251,26 +251,40 @@ class CaptioningRNN(object):
         h0 = np.dot(features, W_proj) + b_proj
 
         captions[:, 0] = self._start
-        prev_h = h0
-        prev_c = np.zeros_like(h0)
+        prev_h = h0  # Previous hidden state
+        prev_c = np.zeros_like(h0)  # Previous cell state
+        # Current word (start word)
+        capt = self._start * np.ones((N, 1), dtype=np.int32)
 
-        for t in map(lambda x: x + 1, range(max_length))[:-1]:
-            capt = captions[:, t - 1][:, np.newaxis]
-            word_embed, _ = word_embedding_forward(capt, W_embed)
+        for t in xrange(max_length):  # Let's go over the sequence
+
+            word_embed, _ = word_embedding_forward(
+                capt, W_embed)  # Embedded current word
             if self.cell_type == 'rnn':
+                # Run a step of rnn
                 h, _ = rnn_step_forward(np.squeeze(
                     word_embed), prev_h, Wx, Wh, b)
             elif self.cell_type == 'lstm':
-                h, prev_c, _ = lstm_step_forward(
-                    np.squeeze(word_embed), prev_h, prev_c, Wx, Wh, b)
+                # Run a step of lstm
+                h, c, _ = lstm_step_forward(np.squeeze(
+                    word_embed), prev_h, prev_c, Wx, Wh, b)
             else:
                 raise ValueError('%s not implemented' % (self.cell_type))
 
+            # Compute the score distrib over the dictionary
             scores, _ = temporal_affine_forward(
                 h[:, np.newaxis, :], W_vocab, b_vocab)
-            idx = np.argmax(scores, axis=2)
-            captions[:, t - 1] = idx[:, 0]
+            # Squeeze unecessari dimension and get the best word idx
+            idx_best = np.squeeze(np.argmax(scores, axis=2))
+            # Put it in the captions
+            captions[:, t] = idx_best
 
+            # Update the hidden state, the cell state (if lstm) and the current
+            # word
             prev_h = h
+            if self.cell_type == 'lstm':
+                prev_c = c
+            capt = captions[:, t]
 
+        # Here you go !
         return captions
