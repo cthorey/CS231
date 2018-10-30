@@ -14,8 +14,6 @@ def font(family,weight,size):
             'weight' : weight,
             'size'   : size}
     matplotlib.rc('font', **font)
-    
-
 def legd(ax,place,size) :
      # given the handle, return a legend
     import matplotlib.pyplot as plt
@@ -39,8 +37,7 @@ def cbar_p(mesh,axs,label,tick):
     cbar = plt.colorbar(mesh,ax=axs,cax=cax)
     cbar.ax.set_title(label,fontsize=18)
     cbar.set_ticks(tick)
-    cbar.set_ticklabels(tick)
-
+    cbar.set_ticklabels(tik)
 def tick(ax,size,xticks,yticks,xlabel,ylabel) :
     ax.set_xlim(0,6)
     ax.set_ylim(0 ,2)
@@ -56,7 +53,6 @@ def tick(ax,size,xticks,yticks,xlabel,ylabel) :
         tick.label.set_fontsize(size)
         
 def make_colormap(seq):
-
     import numpy as np
     import matplotlib.pyplot as plt
     import matplotlib.colors as mcolors
@@ -81,7 +77,6 @@ def tick_1(ax,size) :
         tick.label.set_fontsize(size)
     for tick in ax.yaxis.get_major_ticks():
         tick.label.set_fontsize(size)
-
 
 def legd_Scatter(ax,place,size) :
      # given the handle, return a legend
